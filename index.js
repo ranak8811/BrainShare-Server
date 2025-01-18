@@ -335,6 +335,34 @@ async function run() {
       const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+
+    // get all reported comments
+    app.get(
+      "/reported-comments",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const query = {
+          reported: true,
+        };
+
+        const result = await commentsCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
+
+    // delete a comment
+    app.delete(
+      "/reported-comments/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await commentsCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
