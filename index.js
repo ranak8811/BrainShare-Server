@@ -118,6 +118,42 @@ async function run() {
       res.send(result);
     });
 
+    // get paginated posts of a specific user
+    app.get("/user-posts/:email", async (req, res) => {
+      const email = req.params.email;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 5;
+      const skip = (page - 1) * limit;
+
+      try {
+        const totalPosts = await postsCollection.countDocuments({
+          authorEmail: email,
+        });
+        const myPosts = await postsCollection
+          .find({ authorEmail: email })
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+
+        res.send({
+          posts: myPosts,
+          totalPosts,
+          totalPages: Math.ceil(totalPosts / limit),
+          currentPage: page,
+        });
+      } catch (error) {
+        res.status(500).send({ error: "Failed to fetch posts" });
+      }
+    });
+
+    // delete a posts
+    app.delete("/posts/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await postsCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // add comments
     app.post("/add-comment", async (req, res) => {
       const commentData = req.body;
@@ -160,6 +196,7 @@ async function run() {
       res.send({ role: result?.role });
     });
 
+    // get user profile information
     app.get("/userInfo/:email", async (req, res) => {
       const email = req.params.email;
       const userInfo = await usersCollection.findOne({ email });
