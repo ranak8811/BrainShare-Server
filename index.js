@@ -63,6 +63,7 @@ async function run() {
     const usersCollection = db.collection("users");
     const postsCollection = db.collection("posts");
     const commentsCollection = db.collection("comments");
+    const announcementsCollection = db.collection("announcements");
 
     // verify admin middleware
     const verifyAdmin = async (req, res, next) => {
@@ -360,6 +361,18 @@ async function run() {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) };
         const result = await commentsCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
+
+    // add an announcement to db
+    app.post(
+      "/add-announcement",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const announcement = req.body;
+        const result = await announcementsCollection.insertOne(announcement);
         res.send(result);
       }
     );
