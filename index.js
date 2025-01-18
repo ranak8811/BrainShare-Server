@@ -161,6 +161,62 @@ async function run() {
       res.send(result);
     });
 
+    // Get all comments for a specific post with pagination
+    app.get("/get-comments/:id", async (req, res) => {
+      const postId = req.params.id;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 5;
+      const skip = (page - 1) * limit;
+
+      try {
+        const totalComments = await commentsCollection.countDocuments({
+          postId,
+        });
+        const comments = await commentsCollection
+          .find({ postId })
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+
+        res.send({
+          comments,
+          totalComments,
+          totalPages: Math.ceil(totalComments / limit),
+          currentPage: page,
+        });
+      } catch (error) {
+        res.status(500).send({ error: "Failed to fetch comments" });
+      }
+    });
+
+    // Update feedback and report status for a comment
+    app.patch("/report-comment/:id", async (req, res) => {
+      const commentId = req.params.id;
+      const { feedback } = req.body;
+
+      try {
+        const result = await commentsCollection.updateOne(
+          { _id: new ObjectId(commentId) },
+          {
+            $set: {
+              feedback: feedback,
+              reported: true,
+            },
+          }
+        );
+
+        if (result.modifiedCount > 0) {
+          res.send({
+            message: "Feedback and report status updated successfully",
+          });
+        } else {
+          res.status(400).send({ message: "Failed to update feedback" });
+        }
+      } catch (error) {
+        res.status(500).send({ error: "Error updating comment" });
+      }
+    });
+
     // count upVote
     app.patch("/upVote/:id", async (req, res) => {
       const id = req.params.id;
