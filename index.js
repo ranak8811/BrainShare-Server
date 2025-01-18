@@ -64,6 +64,7 @@ async function run() {
     const postsCollection = db.collection("posts");
     const commentsCollection = db.collection("comments");
     const announcementsCollection = db.collection("announcements");
+    const tagsCollection = db.collection("tags");
 
     // verify admin middleware
     const verifyAdmin = async (req, res, next) => {
@@ -376,6 +377,29 @@ async function run() {
         res.send(result);
       }
     );
+
+    // get admin information
+    app.get(
+      "/admin-info/:email",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const email = req.params.email;
+        const adminInfo = await usersCollection.findOne({ email });
+        const postsCount = await postsCollection.estimatedDocumentCount();
+        const commentsCount = await commentsCollection.estimatedDocumentCount();
+        const usersCount = await usersCollection.estimatedDocumentCount();
+
+        res.send({ adminInfo, postsCount, commentsCount, usersCount });
+      }
+    );
+
+    // add tags to database
+    app.post("/tags", verifyToken, verifyAdmin, async (req, res) => {
+      const tags = req.body;
+      const result = await tagsCollection.insertOne(tags);
+      res.send(result);
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
