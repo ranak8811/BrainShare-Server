@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const morgan = require("morgan");
 
@@ -16,7 +16,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-// app.use(cors());
 
 app.use(express.json());
 app.use(cookieParser());
@@ -63,6 +62,7 @@ async function run() {
     const db = client.db("BrainShareDB");
     const usersCollection = db.collection("users");
     const postsCollection = db.collection("posts");
+    const commentsCollection = db.collection("comments");
 
     // generating jwt
     app.post("/jwt", async (req, res) => {
@@ -101,6 +101,55 @@ async function run() {
         upVote: 0,
         downVote: 0,
       });
+      res.send(result);
+    });
+
+    // post details url
+    app.get("/posts/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await postsCollection.findOne(query);
+      res.send(result);
+    });
+
+    // get all posts
+    app.get("/posts", async (req, res) => {
+      const result = await postsCollection.find().toArray();
+      res.send(result);
+    });
+
+    // add comments
+    app.post("/add-comment", async (req, res) => {
+      const commentData = req.body;
+      const result = await commentsCollection.insertOne(commentData);
+      res.send(result);
+    });
+
+    // count upVote
+    app.patch("/upVote/:id", async (req, res) => {
+      const id = req.params.id;
+      const { upVote } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $inc: {
+          upVote: 1,
+        },
+      };
+      const result = await postsCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // count downVote
+    app.patch("/downVote/:id", async (req, res) => {
+      const id = req.params.id;
+      const { downVote } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $inc: {
+          downVote: 1,
+        },
+      };
+      const result = await postsCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
