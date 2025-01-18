@@ -64,6 +64,23 @@ async function run() {
     const postsCollection = db.collection("posts");
     const commentsCollection = db.collection("comments");
 
+    // verify admin middleware
+    const verifyAdmin = async (req, res, next) => {
+      // console.log("data from verifyAdmin middleware--> ", req.user?.email);
+
+      const email = req.user?.email;
+      const query = { email };
+      const result = await usersCollection.findOne(query);
+
+      if (!result || result?.role !== "admin") {
+        res.status(403).send({
+          message: "Forbidden access! Admin only action!!",
+        });
+      }
+
+      next();
+    };
+
     // generating jwt
     app.post("/jwt", async (req, res) => {
       const email = req.body;
@@ -161,7 +178,7 @@ async function run() {
       res.send(result);
     });
 
-    // Get all comments for a specific post with pagination
+    // get all comments for a specific post with pagination
     app.get("/get-comments/:id", async (req, res) => {
       const postId = req.params.id;
       const page = parseInt(req.query.page) || 1;
@@ -189,7 +206,7 @@ async function run() {
       }
     });
 
-    // Update feedback and report status for a comment
+    // update feedback and report status for a comment
     app.patch("/report-comment/:id", async (req, res) => {
       const commentId = req.params.id;
       const { feedback } = req.body;
@@ -284,6 +301,38 @@ async function run() {
         postCount: 0,
         badge: "bronze",
       });
+      res.send(result);
+    });
+
+    // get all users with pagination and search
+    app.get("/allUsers", verifyToken, verifyAdmin, async (req, res) => {
+      const page = parseInt(req.query.page) || 1;
+      const limit = 5;
+      const search = req.query.search || "";
+
+      const query = {
+        name: { $regex: search, $options: "i" },
+      };
+
+      const total = await usersCollection.countDocuments(query);
+      const users = await usersCollection
+        .find(query)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .toArray();
+
+      res.send({ users, total });
+    });
+
+    // Make a user admin
+    app.patch("/make-admin/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: { role: "admin" },
+      };
+
+      const result = await usersCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
   } finally {
