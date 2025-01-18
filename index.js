@@ -153,6 +153,24 @@ async function run() {
       res.send(result);
     });
 
+    // get user role
+    app.get("/users/role/:email", async (req, res) => {
+      const email = req.params.email;
+      const result = await usersCollection.findOne({ email });
+      res.send({ role: result?.role });
+    });
+
+    app.get("/userInfo/:email", async (req, res) => {
+      const email = req.params.email;
+      const userInfo = await usersCollection.findOne({ email });
+      const myPosts = await postsCollection
+        .find({
+          authorEmail: email,
+        })
+        .toArray();
+      res.send({ userInfo, myPosts });
+    });
+
     // save or update users in db
     app.post("/users/:email", async (req, res) => {
       const email = req.params.email;
