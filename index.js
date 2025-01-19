@@ -172,6 +172,12 @@ async function run() {
       }
     });
 
+    // get all tags
+    app.get("/tags", async (req, res) => {
+      const tags = await tagsCollection.find().toArray();
+      res.send(tags);
+    });
+
     // get paginated posts of a specific user
     app.get("/user-posts/:email", async (req, res) => {
       const email = req.params.email;
