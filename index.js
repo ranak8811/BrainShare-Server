@@ -177,6 +177,11 @@ async function run() {
       const tags = await tagsCollection.find().toArray();
       res.send(tags);
     });
+    // get all announcements
+    app.get("/get-announcements", async (req, res) => {
+      const announcements = await announcementsCollection.find().toArray();
+      res.send(announcements);
+    });
 
     // get paginated posts of a specific user
     app.get("/user-posts/:email", async (req, res) => {
