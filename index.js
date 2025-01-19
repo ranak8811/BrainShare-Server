@@ -172,6 +172,36 @@ async function run() {
       }
     });
 
+    // update a post
+    app.patch("/update-post/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+      const { title, imageUrl, description, tag } = req.body;
+
+      try {
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            title,
+            imageUrl,
+            description,
+            tag,
+          },
+        };
+
+        const result = await postsCollection.updateOne(filter, updateDoc);
+        if (result.modifiedCount > 0) {
+          res.status(200).json({ message: "Post updated successfully" });
+        } else {
+          res
+            .status(404)
+            .json({ message: "Post not found or no changes made" });
+        }
+      } catch (error) {
+        console.error("Error updating post:", error);
+        res.status(500).json({ message: "Failed to update post" });
+      }
+    });
+
     // get all tags
     app.get("/tags", async (req, res) => {
       const tags = await tagsCollection.find().toArray();
