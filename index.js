@@ -6,6 +6,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const morgan = require("morgan");
 
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
+
 const port = process.env.PORT || 4000;
 const app = express();
 
@@ -65,6 +67,7 @@ async function run() {
     const commentsCollection = db.collection("comments");
     const announcementsCollection = db.collection("announcements");
     const tagsCollection = db.collection("tags");
+    const paymentsCollection = db.collection("payments");
 
     // verify admin middleware
     const verifyAdmin = async (req, res, next) => {
@@ -398,6 +401,43 @@ async function run() {
     app.post("/tags", verifyToken, verifyAdmin, async (req, res) => {
       const tags = req.body;
       const result = await tagsCollection.insertOne(tags);
+      res.send(result);
+    });
+
+    // create payment intent
+    app.post("/create-payment-intent", verifyToken, async (req, res) => {
+      const { amount } = req.body;
+
+      totalPrice = amount * 100;
+      // res.send({ totalPrice });
+
+      const { client_secret } = await stripe.paymentIntents.create({
+        amount: totalPrice,
+        currency: "usd",
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+
+      res.send({ clientSecret: client_secret });
+    });
+
+    // save payment history
+    app.post("/save-payment-history", verifyToken, async (req, res) => {
+      const paymentInfo = req.body;
+      console.log(paymentInfo);
+
+      const filter = { email: paymentInfo.email };
+      const updateDoc = {
+        $set: {
+          badge: "gold",
+        },
+      };
+      const result = await paymentsCollection.insertOne(paymentInfo);
+
+      // update user membership status
+      await usersCollection.updateOne(filter, updateDoc);
+
       res.send(result);
     });
   } finally {

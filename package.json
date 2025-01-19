@@ -6,7 +6,8 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.12.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "stripe": "^17.5.0"
   },
   "name": "brainshare-server",
   "version": "1.0.0",
