@@ -134,10 +134,42 @@ async function run() {
       res.send(result);
     });
 
-    // get all posts
+    // get all posts with search and sortByPopularity functionality
     app.get("/posts", async (req, res) => {
-      const result = await postsCollection.find().toArray();
-      res.send(result);
+      const { searchParams, sortByPopularity } = req.query;
+      let filter = {};
+
+      if (searchParams) {
+        filter = {
+          tag: { $regex: searchParams, $options: "i" },
+        };
+      }
+
+      // mongoDB pipeline for sorting and filtering
+      const pipeline = [
+        { $match: filter },
+        {
+          $addFields: {
+            voteDifference: { $subtract: ["$upVote", "$downVote"] },
+          },
+        },
+      ];
+
+      // If sortByPopularity is true, sort by voteDifference in descending order
+      if (sortByPopularity === "true") {
+        pipeline.push({ $sort: { voteDifference: -1 } });
+      } else {
+        // Default sort: newest to oldest
+        pipeline.push({ $sort: { createdAt: -1 } });
+      }
+
+      try {
+        const result = await postsCollection.aggregate(pipeline).toArray();
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        res.status(500).send({ error: "Failed to fetch posts" });
+      }
     });
 
     // get paginated posts of a specific user
@@ -329,7 +361,7 @@ async function run() {
       res.send({ users, total });
     });
 
-    // Make a user admin
+    // make a user admin
     app.patch("/make-admin/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
