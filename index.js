@@ -12,7 +12,11 @@ const port = process.env.PORT || 4000;
 const app = express();
 
 const corsOptions = {
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "https://brainshare-a-12.web.app",
+    "https://brainshare-a-12.firebaseapp.com",
+  ],
   credentials: true,
   optionalSuccessStatus: 200,
 };
@@ -123,6 +127,19 @@ async function run() {
         upVote: 0,
         downVote: 0,
       });
+
+      const filter = {
+        email: postData.authorEmail,
+      };
+      const updateDoc = {
+        $inc: {
+          postCount: 1,
+        },
+      };
+
+      // increase post count of a user
+      await usersCollection.updateOne(filter, updateDoc);
+
       res.send(result);
     });
 
@@ -134,9 +151,9 @@ async function run() {
       res.send(result);
     });
 
-    // get all posts with search and sortByPopularity functionality
+    // get all posts with search, sortByPopularity, and pagination functionality
     app.get("/posts", async (req, res) => {
-      const { searchParams, sortByPopularity } = req.query;
+      const { searchParams, sortByPopularity, page = 1, limit = 5 } = req.query;
       let filter = {};
 
       if (searchParams) {
@@ -155,17 +172,24 @@ async function run() {
         },
       ];
 
-      // If sortByPopularity is true, sort by voteDifference in descending order
+      // sort by popularity or newest posts
       if (sortByPopularity === "true") {
         pipeline.push({ $sort: { voteDifference: -1 } });
       } else {
-        // Default sort: newest to oldest
         pipeline.push({ $sort: { createdAt: -1 } });
       }
 
+      // pagination logic
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      pipeline.push({ $skip: skip }, { $limit: parseInt(limit) });
+
       try {
-        const result = await postsCollection.aggregate(pipeline).toArray();
-        res.send(result);
+        const posts = await postsCollection.aggregate(pipeline).toArray();
+        const totalPosts = await postsCollection.countDocuments(filter); // get total number of posts for pagination
+        res.send({
+          posts,
+          totalPosts,
+        });
       } catch (error) {
         console.error("Error fetching posts:", error);
         res.status(500).send({ error: "Failed to fetch posts" });
@@ -355,6 +379,7 @@ async function run() {
         .find({
           authorEmail: email,
         })
+        .sort({ createdAt: -1 })
         .toArray();
       res.send({ userInfo, myPosts });
     });
