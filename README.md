@@ -68,7 +68,7 @@ Brainshare aims to provide a collaborative environment where users can exchange 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/Programming-Hero-Web-Course4/b10a12-client-side-ranak8811.git
+   git clone https://github.com/ranak8811/BrainShare-Client.git
    ```
 
 2. Navigate to the project directory and install dependencies:
@@ -110,7 +110,7 @@ Brainshare aims to provide a collaborative environment where users can exchange 
 
 ## Backend Repository
 
-Backend code link: https://github.com/Programming-Hero-Web-Course4/b10a12-server-side-ranak8811
+Backend code link: https://github.com/ranak8811/BrainShare-Server
 
 ## Contribution
 
