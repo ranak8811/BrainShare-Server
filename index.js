@@ -151,7 +151,7 @@ async function run() {
       res.send(result);
     });
 
-    // get all posts with search, sortByPopularity, and pagination functionality
+    // get all posts with search, sortByPopularity, and pagination functionality for the homepage
     app.get("/posts", async (req, res) => {
       const { searchParams, sortByPopularity, page = 1, limit = 5 } = req.query;
       let filter = {};
